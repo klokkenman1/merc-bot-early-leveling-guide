@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoE Leveling Guide</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --surface: #242424;
+      --surface2: #2c2c2c;
+      --note-bg: #2a2a1a;
+      --note-border: #8b6914;
+      --text: #d4c5a9;
+      --muted: #6b6b6b;
+      --accent: #c8a84b;
+      --accent2: #7aab6e;
+      --red: #c04040;
+      --radius: 4px;
+      --max-width: 820px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1rem 1rem 4rem;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    #app {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin: 0 0 0.25rem;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .act-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.3rem;
+      margin: 1.5rem 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Step row */
+    .step {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: var(--radius);
+      margin-bottom: 2px;
+      background: var(--surface);
+      border: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .step.drag-over {
+      border-color: var(--accent);
+      background: #2a2400;
+    }
+
+    .step.completed .step-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    /* Checkbox */
+    .step-check {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      border: 1px solid var(--muted);
+      border-radius: 2px;
+      background: transparent;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+    }
+
+    .step-check:checked {
+      background: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .step-check:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 1px;
+      width: 8px;
+      height: 5px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg);
+    }
+
+    /* Step text area */
+    .step-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .step-text {
+      margin: 0;
+      color: var(--text);
+    }
+
+    .step-text .zone    { color: #8bc4e0; }
+    .step-text .boss    { color: var(--red); font-weight: 600; }
+    .step-text .quest   { color: #c8a84b; }
+    .step-text .quest-title { color: var(--accent); font-weight: 600; }
+    .step-text .wp      { color: #7aab6e; font-size: 0.85em; }
+    .step-text .tp      { color: #b06060; font-size: 0.85em; }
+    .step-text .optional { color: var(--muted); font-style: italic; font-size: 0.9em; }
+    .step-text .trial   { color: #a080c0; }
+    .step-text img      { display: none; } /* hide external images that won't load */
+
+    /* Notes area inside step */
+    .notes-list {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-height: 4px;
+    }
+
+    /* Note card */
+    .note-card {
+      background: var(--note-bg);
+      border: 1px solid var(--note-border);
+      border-radius: var(--radius);
+      padding: 3px 8px 3px 4px;
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      cursor: default;
+      max-width: 100%;
+      font-size: 0.85em;
+      color: #c8b97a;
+      position: relative;
+    }
+
+    .note-card.dragging {
+      opacity: 0.35;
+      transform: scale(0.97);
+    }
+
+    /* insertion indicator shown while dragging within same container */
+    .note-card.drop-before::before,
+    .note-card.drop-after::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+    }
+    .note-card.drop-before::before { top: -2px; }
+    .note-card.drop-after::after  { bottom: -2px; }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--muted);
+      user-select: none;
+      flex-shrink: 0;
+      padding-top: 1px;
+      font-size: 1em;
+    }
+
+    .note-text {
+      margin: 0;
+      white-space: pre-wrap;
+      flex: 1;
+      min-width: 0;
+      outline: none;
+    }
+
+    .note-text[contenteditable="true"] {
+      background: #1a1a00;
+      border-radius: 2px;
+      padding: 1px 3px;
+      box-shadow: 0 0 0 1px var(--accent);
+      cursor: text;
+    }
+
+    .note-delete {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9em;
+      padding: 0 0 0 2px;
+      line-height: 1;
+      opacity: 0;
+      transition: opacity 0.1s, color 0.1s;
+    }
+
+    .note-card:hover .note-delete { opacity: 1; }
+    .note-delete:hover { color: var(--red); }
+
+    /* Unassigned notes pool */
+    #pool-section {
+      margin-top: 1.5rem;
+    }
+
+    #pool-heading {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    #pool {
+      background: var(--surface);
+      border: 1px dashed #444;
+      border-radius: var(--radius);
+      padding: 0.5rem;
+      min-height: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    #pool.drag-over {
+      border-color: var(--accent);
+      background: #2a2400;
+    }
+
+    /* Instructions bar */
+    #tip {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #111;
+      border-top: 1px solid #333;
+      padding: 0.3rem 1rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .add-note-btn {
+      background: none;
+      border: 1px dashed #555;
+      color: var(--muted);
+      border-radius: var(--radius);
+      padding: 2px 8px;
+      font-size: 0.8em;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-note-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <h1>PoE Leveling Guide</h1>
+  <p class="subtitle">Check off steps as you go. Drag notes (⠿) to any step.</p>
+  <div id="guide"></div>
+  <div id="pool-section">
+    <div id="pool-heading">Unassigned Notes</div>
+    <div id="pool" data-drop-target="pool"></div>
+  </div>
+</div>
+
+<div id="tip">
+  <span>✓ click checkbox to complete a step</span>
+  <span>⠿ drag to move or reorder a note</span>
+  <span>double-click note text to edit · ✕ to delete</span>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const STEPS = [
+  // ACT 1
+  { id: 'a1-0',  act: 1, html: `On the <span class="zone">The Twilight Strand</span> kill first mob ➞ <span class="boss">Hillock</span>` },
+  { id: 'a1-1',  act: 1, html: `Turn in <span class="quest-title">Enemy at the Gate</span> and pick <span class="quest">Splitting Steel</span>` },
+  { id: 'a1-2',  act: 1, html: `<span class="zone">The Coast</span> don't kill anything ➞ <span class="zone">Mud flats</span> (don't forget the <span class="wp">Waypoint</span>)` },
+  { id: 'a1-3',  act: 1, html: `<span class="zone">Mud flats</span> get the 3x <span class="quest">Glyphs</span> then ➞ <span class="zone">The Submerged Passage</span>` },
+  { id: 'a1-4',  act: 1, html: `<span class="zone">The Submerged Passage</span> get <span class="wp">Waypoint</span>, take <span class="wp">Waypoint</span> back to <span class="zone">The Coast</span> ➞ <span class="zone">The Tidal Island</span>` },
+  { id: 'a1-5',  act: 1, html: `<span class="zone">The Tidal Island</span> kill <span class="boss">Hailrake</span> get <span class="quest">Medicine Chest</span>, <span class="tp">Town Portal</span> to go back to town` },
+  { id: 'a1-6',  act: 1, html: `Turn in <span class="quest-title">Breaking Some Eggs</span> and pick <span class="quest">Frostblink</span>` },
+  { id: 'a1-7',  act: 1, html: `Turn in <span class="quest-title">Mercy Mission</span> and pick <span class="quest">Volley Support</span>` },
+  { id: 'a1-8',  act: 1, html: `<span class="wp">Waypoint</span> to <span class="zone">The Submerged Passage</span>` },
+  { id: 'a1-9',  act: 1, html: `<span class="zone">The Submerged Passage</span> look for long staircase or bridge` },
+  { id: 'a1-10', act: 1, html: `Leave <span class="tp">Town Portal</span> at staircase or bridge ➞ <span class="zone">The Ledge</span>` },
+  { id: 'a1-11', act: 1, html: `<span class="zone">The Ledge</span>, <span class="wp">Waypoint</span> to town, use <span class="tp">Town Portal</span> you left at the staircase or bridge` },
+  { id: 'a1-12', act: 1, html: `Go right of staircase for <span class="zone">The Flooded Depths</span>` },
+  { id: 'a1-13', act: 1, html: `Find and kill <span class="boss">The Deep Dweller</span> then log out` },
+  { id: 'a1-14', act: 1, html: `<span class="wp">Waypoint</span> to <span class="zone">The Ledge</span> ➞ <span class="zone">The Climb</span>` },
+  { id: 'a1-15', act: 1, html: `<span class="zone">The Climb</span> (3 stalagmites side of waypoint points to exit) you don't really need the <span class="wp">Waypoint</span> ➞ <span class="zone">The Lower Prison</span>` },
+  { id: 'a1-16', act: 1, html: `<span class="zone">The Lower Prison</span> take <span class="wp">Waypoint</span> <span class="optional">, do <span class="trial">trial</span> on first level</span> ➞ <span class="zone">The Upper Prison</span> kill <span class="boss">Brutus</span>, log out` },
+  { id: 'a1-17', act: 1, html: `Turn in <span class="quest-title">The Caged Brute</span> and pick <span class="quest">Leap Slam</span> and <span class="quest">Faster Attacks Support</span>` },
+  { id: 'a1-18', act: 1, html: `<span class="wp">Waypoint</span> to <span class="zone">Prisoner's Gate</span> ➞ <span class="zone">The Ship Graveyard</span> ➞ <span class="zone">The Ship Graveyard Cave</span> and leave a <span class="tp">Town Portal</span> in front` },
+  { id: 'a1-19', act: 1, html: `Find <span class="zone">The Cavern of Wrath</span> <span class="wp">Waypoint</span> to town` },
+  { id: 'a1-20', act: 1, html: `Turn in <span class="quest-title">The Siren's Cadence</span> and pick <span class="quest">Scorching Ray</span>` },
+  { id: 'a1-21', act: 1, html: `Take your <span class="tp">Town Portal</span> (just entering the <span class="zone">The Cavern of Wrath</span> completes the quest)` },
+  { id: 'a1-22', act: 1, html: `Enter <span class="zone">The Ship Graveyard Cave</span> get the <span class="quest">AllFlame</span> and log out` },
+  { id: 'a1-23', act: 1, html: `<span class="wp">Waypoint</span> to <span class="zone">The Ship Graveyard</span> then find and kill <span class="boss">Fairgraves</span>, log out` },
+  { id: 'a1-24', act: 1, html: `<span class="wp">Waypoint</span> <span class="zone">The Cavern of Wrath</span> ➞ kill <span class="boss">Merveil</span> ➞ Act 2` },
+
+  // ACT 2
+  { id: 'a2-0',  act: 2, html: `<span class="zone">The Southern Forest</span> ➞ Town` },
+  { id: 'a2-1',  act: 2, html: `In town, head North East to <span class="zone">The Old Fields</span> find and leave a <span class="tp">Town Portal</span> outside <span class="zone">The Den</span> then ➞ <span class="zone">The Crossroads</span>` },
+  { id: 'a2-2',  act: 2, html: `<span class="zone">The Crossroads</span> ➞ <span class="wp">Waypoint</span> to town and take the <span class="tp">Town Portal</span> you left outside <span class="zone">The Den</span>` },
+  { id: 'a2-3',  act: 2, html: `Go in <span class="zone">The Den</span> and Kill <span class="boss">The Great White Beast</span> then log out` },
+  { id: 'a2-4',  act: 2, html: `Turn in <span class="quest-title">The Great White Beast</span> then <span class="wp">Waypoint</span> to <span class="zone">The Crossroads</span> ➞ North to <span class="zone">The Chamber of Sins</span>` },
+  { id: 'a2-5',  act: 2, html: `In <span class="zone">The Chamber of Sins</span>, get the <span class="wp">Waypoint</span>, the waypoint points in direction of the next level` },
+  { id: 'a2-6',  act: 2, html: `<span class="zone">The Chamber of Sins level 2</span> <span class="optional">do the <span class="trial">trial</span> it is most likely north,</span> Find the long hallway, kill <span class="boss">Fidelitas</span> get the <span class="quest">Baleful Gem</span> then log out` },
+  { id: 'a2-7',  act: 2, html: `Turn in <span class="quest-title">Intruders in Black</span>` },
+  { id: 'a2-8',  act: 2, html: `Get Herald reward if no herald good for your build get Summon Skitter Bots, check vendors <span class="optional">, <span class="wp">Waypoint</span> to <span class="zone">The Crossroads</span> ➞ South to <span class="zone">The Fellshrine Ruins</span></span>` },
+  { id: 'a2-9',  act: 2, html: `<span class="optional">Find <span class="zone">The Crypt</span>, <span class="zone">The Crypt</span> loops around ➞ <span class="trial">trial</span> then log out,</span> <span class="zone">The Riverways</span> do Einhar's quest, get red beast ➞ <span class="zone">The Western Forest</span>` },
+  { id: 'a2-10', act: 2, html: `<span class="zone">The Western Forest</span> get the <span class="wp">Waypoint</span> (Alira is always the same side of the road as <span class="wp">Waypoint</span> and <span class="zone">The Weaver's Chamber</span> on opposite side)` },
+  { id: 'a2-11', act: 2, html: `Find and ➞ <span class="zone">The Weaver's Chamber</span> and kill <span class="boss">The Weaver</span> then log out` },
+  { id: 'a2-12', act: 2, html: `Turn in <span class="quest-title">Sharp and Cruel</span>` },
+  { id: 'a2-13', act: 2, html: `<span class="wp">Waypoint</span> to <span class="zone">The Crossroads</span> go north to <span class="zone">The Broken Bridge</span>, follow path, try find red beast if you didn't do it earlier` },
+  { id: 'a2-14', act: 2, html: `Kill <span class="boss">Kraityn</span> log out then back in, go to <span class="zone">The Riverways</span>, follow path north ➞ <span class="zone">The Wetlands</span>` },
+  { id: 'a2-15', act: 2, html: `<span class="zone">The Wetlands</span> kill <span class="boss">Oak</span> and get the <span class="wp">Waypoint</span> just north, <span class="wp">Waypoint</span> to <span class="zone">The Western Forest</span> and help Alira` },
+  { id: 'a2-16', act: 2, html: `Then find the path, follow it to <span class="boss">Arteri</span>, kill him and get the <span class="quest">Thaumetic Emblem</span>, log out` },
+  { id: 'a2-17', act: 2, html: `<span class="wp">Waypoint</span> to Act 1 get passive point reward and check vendor, <span class="wp">Waypoint</span> back to Act 2 town then <span class="zone">The Wetlands</span> ➞ <span class="zone">The Vaal Ruins</span>` },
+  { id: 'a2-18', act: 2, html: `<span class="zone">The Vaal Ruins</span> ➞ <span class="zone">The Northern Forest</span> ➞ <span class="zone">The Caverns</span> find and <span class="wp">Waypoint</span> to town` },
+  { id: 'a2-19', act: 2, html: `Turn in <span class="quest-title">The Root of the Problem</span>` },
+  { id: 'a2-20', act: 2, html: `<span class="wp">Waypoint</span> <span class="zone">The Caverns</span> ➞ find <span class="zone">The Ancient Pyramid</span> and kill <span class="boss">Vaal Oversoul</span> <span class="optional">(don't forget crafting)</span>` },
+  { id: 'a2-21', act: 2, html: `Log out, vendor then <span class="wp">Waypoint</span> to Act 3` },
+];
+
+// Notes from custom-notes.txt — each gets a unique id
+const DEFAULT_NOTES = [
+  // General / unassigned
+  { id: 'n-0',  text: 'Path to movement first then health' },
+  { id: 'n-1',  text: 'Spectral throw (dropped)' },
+  { id: 'n-2',  text: 'Prismatic burst support (temp till you have volley and chance to bleed)' },
+  // Enemy at the Gate (a1-1)
+  { id: 'n-3',  text: 'Splitting steel (quest, can sell)' },
+  { id: 'n-4',  text: 'If it didn\'t drop buy 2h sword' },
+  { id: 'n-5',  text: 'If extra currency buy iron ring' },
+  { id: 'n-6',  text: 'Can gamble 2h for gold' },
+  // Breaking Some Eggs / Mercy Mission (a1-6)
+  { id: 'n-7',  text: 'Frostblink (quest)' },
+  { id: 'n-8',  text: 'Volley (quest)' },
+  { id: 'n-9',  text: 'Chance to bleed (buy act 1)' },
+  { id: 'n-10', text: 'Decoy totem (quest)' },
+  { id: 'n-11', text: 'Snipers Mark (buy act 1)' },
+  { id: 'n-12', text: 'Shield Charge (buy act 1)' },
+  { id: 'n-13', text: 'Momentum (buy act 1)' },
+  // The Caged Brute (a1-17)
+  { id: 'n-14', text: 'Can gamble 2h for gold (new base)' },
+  { id: 'n-15', text: 'Leap Slam (quest)' },
+  { id: 'n-16', text: 'Faster Attacks (quest)' },
+  { id: 'n-17', text: 'With Leap Slam at boss: swap Volley temp' },
+  // The Siren's Cadence (a1-20)
+  { id: 'n-18', text: 'Scorching Ray (quest) — level in offhand/open socket' },
+  // Intruders in Black (a2-7)
+  { id: 'n-19', text: 'Act 2 around lvl 18' },
+  { id: 'n-20', text: 'Buy shield/scepter' },
+  { id: 'n-21', text: 'Buy efficacy support (act 1)' },
+  { id: 'n-22', text: 'Should already have shield charge? Link with faster attack' },
+  { id: 'n-23', text: 'Righteous Fire (buy act 2)' },
+  { id: 'n-24', text: 'Craft Ruby rings' },
+  { id: 'n-25', text: 'Blood Rage (buy act 2)' },
+  { id: 'n-26', text: 'Respec' },
+  // Herald/vendor step (a2-8)
+  { id: 'n-27', text: 'Scitter Bots (buy act 2)' },
+  { id: 'n-28', text: 'Arcane Surge (buy act 1 for Scorching Ray?)' },
+  { id: 'n-29', text: 'Infused Channeling Support (buy act 1 for Scorching Ray?)' },
+  // Sharp and Cruel (a2-12)
+  { id: 'n-30', text: 'Elemental Focus Support (buy act 2 for RF)' },
+];
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'poe-guide-v2';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object') return null;
+    return parsed;
+  } catch (_) { return null; }
+}
+
+function saveState(st) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+  } catch (_) {}
+}
+
+// State shape:
+// {
+//   checked:        { [stepId]: true },
+//   noteAssignment: { [noteId]: stepId | 'pool' },
+//   noteOrder:      { [location]: [noteId, ...] },   // ordered list per location
+//   noteText:       { [noteId]: string },             // overridden text
+//   extraNotes:     [ { id, text } ],                 // user-created notes
+// }
+
+let state = loadState() || {
+  checked: {},
+  noteAssignment: {},
+  noteOrder: {},
+  noteText: {},
+  extraNotes: [],
+};
+
+// Ensure all state fields exist after upgrade
+if (!state.noteOrder)   state.noteOrder   = {};
+if (!state.noteText)    state.noteText    = {};
+if (!state.extraNotes)  state.extraNotes  = [];
+
+// Default assignments — matches user-specified localStorage
+const DEFAULT_ASSIGNMENTS = {
+  'n-0':  'a1-0',
+  'n-1':  'a1-0',
+  'n-2':  'a1-0',
+  'n-3':  'a1-1',
+  'n-4':  'a1-1',
+  'n-5':  'a1-1',
+  'n-6':  'a1-1',
+  'n-7':  'a1-7',
+  'n-8':  'a1-7',
+  'n-9':  'a1-7',
+  'n-10': 'a1-7',
+  'n-11': 'a1-7',
+  'n-12': 'a1-7',
+  'n-13': 'a1-7',
+  'n-14': 'a1-17',
+  'n-15': 'a1-17',
+  'n-16': 'a1-17',
+  'n-17': 'a1-17',
+  'n-18': 'a1-20',
+  'n-19': 'a2-7',
+  'n-20': 'a2-7',
+  'n-21': 'a2-7',
+  'n-22': 'a2-7',
+  'n-23': 'a2-7',
+  'n-24': 'a2-7',
+  'n-25': 'a2-7',
+  'n-26': 'a2-7',
+  'n-27': 'a2-8',
+  'n-28': 'a2-8',
+  'n-29': 'a2-8',
+  'n-30': 'a2-12',
+};
+
+// Initialise any new notes using default assignments
+DEFAULT_NOTES.forEach(n => {
+  if (!(n.id in state.noteAssignment)) {
+    state.noteAssignment[n.id] = DEFAULT_ASSIGNMENTS[n.id] ?? 'pool';
+  }
+});
+
+// All notes = defaults + user-created extras
+function allNotes() {
+  return [
+    ...DEFAULT_NOTES.map(n => ({
+      id: n.id,
+      text: state.noteText[n.id] ?? n.text,
+    })),
+    ...state.extraNotes,
+  ];
+}
+
+// Get notes for a location in their saved order
+function notesForLocation(loc) {
+  const notes = allNotes().filter(n => state.noteAssignment[n.id] === loc);
+  const order = state.noteOrder[loc];
+  if (!order) return notes;
+  const map = new Map(notes.map(n => [n.id, n]));
+  const ordered = order.map(id => map.get(id)).filter(Boolean);
+  // append any not in order yet
+  const inOrder = new Set(order);
+  notes.forEach(n => { if (!inOrder.has(n.id)) ordered.push(n); });
+  return ordered;
+}
+
+function saveOrderForLocation(loc, noteEls) {
+  state.noteOrder[loc] = [...noteEls].map(el => el.dataset.noteId);
+  saveState(state);
+}
+
+// ─── DRAG STATE ──────────────────────────────────────────────────────────────
+
+let dragNoteId     = null;
+let dragSrcLoc     = null;  // source location string
+
+// ─── BUILD DOM ───────────────────────────────────────────────────────────────
+
+function buildNoteCard(note, location) {
+  const card = document.createElement('div');
+  card.className = 'note-card';
+  card.draggable = true;
+  card.dataset.noteId = note.id;
+  card.dataset.location = location;
+
+  const handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.setAttribute('aria-hidden', 'true');
+  handle.textContent = '⠿';
+
+  const p = document.createElement('p');
+  p.className = 'note-text';
+  p.textContent = note.text;
+
+  // Double-click to edit
+  p.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    card.draggable = false; // disable drag while editing
+    p.contentEditable = 'true';
+    p.focus();
+    // place cursor at end
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+
+  p.addEventListener('blur', () => {
+    p.contentEditable = 'false';
+    card.draggable = true;
+    const newText = p.textContent.trim();
+    if (newText === '') {
+      // delete if emptied
+      deleteNote(note.id);
+      return;
+    }
+    state.noteText[note.id] = newText;
+    saveState(state);
+  });
+
+  p.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      p.blur();
+    }
+    if (e.key === 'Escape') {
+      p.textContent = note.text; // revert
+      p.blur();
+    }
+  });
+
+  const del = document.createElement('button');
+  del.className = 'note-delete';
+  del.textContent = '✕';
+  del.title = 'Delete note';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteNote(note.id);
+  });
+
+  card.appendChild(handle);
+  card.appendChild(p);
+  card.appendChild(del);
+  return card;
+}
+
+function deleteNote(noteId) {
+  delete state.noteAssignment[noteId];
+  delete state.noteText[noteId];
+  // remove from order lists
+  for (const loc in state.noteOrder) {
+    state.noteOrder[loc] = state.noteOrder[loc].filter(id => id !== noteId);
+  }
+  // remove from extraNotes if user-created
+  state.extraNotes = state.extraNotes.filter(n => n.id !== noteId);
+  saveState(state);
+  render();
+}
+
+function buildAddButton(location) {
+  const btn = document.createElement('button');
+  btn.className = 'add-note-btn';
+  btn.textContent = '+ note';
+  btn.addEventListener('click', () => {
+    const id = 'u-' + Date.now();
+    const note = { id, text: 'New note' };
+    state.extraNotes.push(note);
+    state.noteAssignment[id] = location;
+    if (!state.noteOrder[location]) state.noteOrder[location] = [];
+    state.noteOrder[location].push(id);
+    saveState(state);
+    render();
+    // auto-focus the new card's text for immediate editing
+    setTimeout(() => {
+      const el = document.querySelector(`[data-note-id="${id}"] .note-text`);
+      if (el) {
+        el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+        el.closest('.note-card').draggable = false;
+        el.contentEditable = 'true';
+        el.focus();
+        document.execCommand('selectAll', false, null);
+      }
+    }, 30);
+  });
+  return btn;
+}
+
+function buildStep(step) {
+  const row = document.createElement('div');
+  row.className = 'step';
+  row.dataset.stepId = step.id;
+  if (state.checked[step.id]) row.classList.add('completed');
+
+  const check = document.createElement('input');
+  check.type = 'checkbox';
+  check.className = 'step-check';
+  check.checked = !!state.checked[step.id];
+  check.addEventListener('change', () => {
+    if (check.checked) state.checked[step.id] = true;
+    else delete state.checked[step.id];
+    row.classList.toggle('completed', check.checked);
+    saveState(state);
+  });
+
+  const body = document.createElement('div');
+  body.className = 'step-body';
+
+  const p = document.createElement('p');
+  p.className = 'step-text';
+  p.innerHTML = step.html;
+  body.appendChild(p);
+
+  const notesList = document.createElement('div');
+  notesList.className = 'notes-list';
+  notesList.dataset.location = step.id;
+
+  notesForLocation(step.id).forEach(n => notesList.appendChild(buildNoteCard(n, step.id)));
+  notesList.appendChild(buildAddButton(step.id));
+
+  body.appendChild(notesList);
+  row.appendChild(check);
+  row.appendChild(body);
+  return row;
+}
+
+function render() {
+  const guide = document.getElementById('guide');
+  guide.innerHTML = '';
+
+  [1, 2].forEach(act => {
+    const h = document.createElement('h2');
+    h.className = 'act-heading';
+    h.textContent = `Act ${act}`;
+    guide.appendChild(h);
+
+    STEPS.filter(s => s.act === act).forEach(s => {
+      guide.appendChild(buildStep(s));
+    });
+  });
+
+  // Pool
+  const pool = document.getElementById('pool');
+  pool.innerHTML = '';
+  notesForLocation('pool').forEach(n => pool.appendChild(buildNoteCard(n, 'pool')));
+  pool.appendChild(buildAddButton('pool'));
+}
+
+// ─── DRAG AND DROP ───────────────────────────────────────────────────────────
+
+document.addEventListener('dragstart', e => {
+  const card = e.target.closest('.note-card');
+  if (!card) return;
+  dragNoteId  = card.dataset.noteId;
+  dragSrcLoc  = card.dataset.location;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => card.classList.add('dragging'), 0);
+});
+
+document.addEventListener('dragend', () => {
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.drop-before,.drop-after').forEach(el => {
+    el.classList.remove('drop-before', 'drop-after');
+  });
+  dragNoteId = null;
+  dragSrcLoc = null;
+});
+
+document.addEventListener('dragover', e => {
+  if (!dragNoteId) return;
+
+  // Reorder within same container: dragging over another card
+  const overCard = e.target.closest('.note-card');
+  if (overCard && overCard.dataset.noteId !== dragNoteId) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.drop-before,.drop-after').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    const rect = overCard.getBoundingClientRect();
+    const mid  = rect.top + rect.height / 2;
+    overCard.classList.add(e.clientY < mid ? 'drop-before' : 'drop-after');
+    return;
+  }
+
+  // Drop onto a container (step or pool)
+  const target = dropZoneFor(e.target);
+  if (target) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.drop-before,.drop-after').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  }
+});
+
+document.addEventListener('dragleave', e => {
+  const card = e.target.closest('.note-card');
+  if (card) {
+    if (!card.contains(e.relatedTarget)) {
+      card.classList.remove('drop-before', 'drop-after');
+    }
+    return;
+  }
+  const zone = dropZoneFor(e.target);
+  if (zone && !zone.contains(e.relatedTarget)) {
+    zone.classList.remove('drag-over');
+  }
+});
+
+document.addEventListener('drop', e => {
+  if (!dragNoteId) return;
+
+  // Drop onto another card (reorder or move+reorder)
+  const overCard = e.target.closest('.note-card');
+  if (overCard && overCard.dataset.noteId !== dragNoteId) {
+    e.preventDefault();
+    const destLoc  = overCard.dataset.location;
+    const isBefore = overCard.classList.contains('drop-before');
+
+    overCard.classList.remove('drop-before', 'drop-after');
+
+    // Update assignment
+    state.noteAssignment[dragNoteId] = destLoc;
+
+    // Update order for destination
+    const destNotes = notesForLocation(destLoc)
+      .filter(n => n.id !== dragNoteId)
+      .map(n => n.id);
+    const idx = destNotes.indexOf(overCard.dataset.noteId);
+    destNotes.splice(isBefore ? idx : idx + 1, 0, dragNoteId);
+    state.noteOrder[destLoc] = destNotes;
+
+    // Clean up source order if different location
+    if (dragSrcLoc && dragSrcLoc !== destLoc && state.noteOrder[dragSrcLoc]) {
+      state.noteOrder[dragSrcLoc] = state.noteOrder[dragSrcLoc].filter(id => id !== dragNoteId);
+    }
+
+    saveState(state);
+    render();
+    return;
+  }
+
+  // Drop onto a zone (step container or pool)
+  const zone = dropZoneFor(e.target);
+  if (zone) {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const destLoc = zone.dataset.location || 'pool';
+
+    state.noteAssignment[dragNoteId] = destLoc;
+    // append to end of order for that location
+    if (!state.noteOrder[destLoc]) state.noteOrder[destLoc] = [];
+    state.noteOrder[destLoc] = state.noteOrder[destLoc].filter(id => id !== dragNoteId);
+    state.noteOrder[destLoc].push(dragNoteId);
+
+    if (dragSrcLoc && dragSrcLoc !== destLoc && state.noteOrder[dragSrcLoc]) {
+      state.noteOrder[dragSrcLoc] = state.noteOrder[dragSrcLoc].filter(id => id !== dragNoteId);
+    }
+
+    saveState(state);
+    render();
+  }
+});
+
+// Returns the droppable zone element (notes-list div or #pool), not the step row itself
+function dropZoneFor(el) {
+  const notesList = el.closest('.notes-list');
+  if (notesList) return notesList;
+  const pool = el.closest('#pool');
+  if (pool) return pool;
+  return null;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+render();
+</script>
+</body>
+</html>
