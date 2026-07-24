@@ -427,13 +427,40 @@ function saveState(st) {
 //   extraNotes:     [ { id, text } ],                 // user-created notes
 // }
 
-let state = loadState() || {
+const DEFAULT_STATE = {
   checked: {},
-  noteAssignment: {},
-  noteOrder: {},
-  noteText: {},
-  extraNotes: [],
+  noteAssignment: {
+    "n-0":"a1-0","n-1":"a1-0","n-2":"a1-0",
+    "n-3":"a1-1","n-4":"a1-1","n-5":"a1-1",
+    "n-6":"a1-7","n-9":"a1-7","n-10":"a1-7","n-11":"a1-7","n-12":"a1-7","n-13":"a1-7",
+    "n-14":"a1-17","n-17":"a1-17",
+    "n-18":"a1-20",
+    "n-19":"a2-7","n-20":"a2-7","n-21":"a2-7","n-22":"a2-7","n-23":"a2-7","n-24":"a2-7","n-25":"a2-7","n-26":"a2-7",
+    "n-27":"a2-8","n-28":"a2-8","n-29":"a2-8",
+    "n-30":"a2-12",
+    "u-1784850613311":"a2-21"
+  },
+  noteOrder: {
+    "a1-7": ["n-6","n-9","n-10","n-11","n-12","n-13"],
+    "a2-21": ["u-1784850613311"]
+  },
+  noteText: {
+    "n-3":  "Can sell splitting steel",
+    "n-6":  "Can gamble 2h for gold",
+    "n-11": "Snipers Mark (buy act 1)",
+    "n-13": "Momentum (buy act 1) (for shield charge eventually)",
+    "n-17": "Swap volley with faster attacks at boss temp",
+    "n-21": "Buy efficacy support (act 1) x 2 for both RF and Ray",
+    "n-28": "Arcane Surge (buy act 1 for Scorching Ray)",
+    "n-29": "Infused Channeling Support (buy act 1 for Scorching Ray)",
+    "u-1784850613311": "If you want burning damage support for your RF then do library in act 3"
+  },
+  extraNotes: [
+    { id: "u-1784850613311", text: "If you want burning damage support for your RF then do library in act 3" }
+  ],
 };
+
+let state = loadState() || DEFAULT_STATE;
 
 // Ensure all state fields exist after upgrade
 if (!state.noteOrder)   state.noteOrder   = {};
